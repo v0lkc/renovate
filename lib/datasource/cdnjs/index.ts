@@ -1,61 +1,52 @@
 import { ExternalHostError } from '../../types/errors/external-host-error';
-import { Http } from '../../util/http';
+import { Datasource } from '../datasource';
 import type { GetReleasesConfig, ReleaseResult } from '../types';
+import type { CdnjsResponse } from './types';
 
-export const id = 'cdnjs';
-export const customRegistrySupport = false;
-export const defaultRegistryUrls = ['https://api.cdnjs.com/'];
-export const caching = true;
+export class CdnJsDatasource extends Datasource {
+  readonly id = 'cdnjs';
 
-const http = new Http(id);
+  customRegistrySupport = false;
 
-interface CdnjsAsset {
-  version: string;
-  files: string[];
-  sri?: Record<string, string>;
-}
+  defaultRegistryUrls = ['https://api.cdnjs.com/'];
 
-interface CdnjsResponse {
-  homepage?: string;
-  repository?: {
-    type: 'git' | unknown;
-    url?: string;
-  };
-  assets?: CdnjsAsset[];
-}
+  caching = true;
 
-export async function getReleases({
-  lookupName,
-  registryUrl,
-}: GetReleasesConfig): Promise<ReleaseResult | null> {
-  // Each library contains multiple assets, so we cache at the library level instead of per-asset
-  const library = lookupName.split('/')[0];
-  const url = `${registryUrl}libraries/${library}?fields=homepage,repository,assets`;
-  try {
-    const { assets, homepage, repository } = (
-      await http.getJson<CdnjsResponse>(url)
-    ).body;
-    if (!assets) {
-      return null;
+  // this.handleErrors will always throw
+  // eslint-disable-next-line consistent-return
+  async getReleases({
+    lookupName,
+    registryUrl,
+  }: GetReleasesConfig): Promise<ReleaseResult | null> {
+    // Each library contains multiple assets, so we cache at the library level instead of per-asset
+    const library = lookupName.split('/')[0];
+    const url = `${registryUrl}libraries/${library}?fields=homepage,repository,assets`;
+    try {
+      const { assets, homepage, repository } = (
+        await this.http.getJson<CdnjsResponse>(url)
+      ).body;
+      if (!assets) {
+        return null;
+      }
+      const assetName = lookupName.replace(`${library}/`, '');
+      const releases = assets
+        .filter(({ files }) => files.includes(assetName))
+        .map(({ version, sri }) => ({ version, newDigest: sri[assetName] }));
+
+      const result: ReleaseResult = { releases };
+
+      if (homepage) {
+        result.homepage = homepage;
+      }
+      if (repository?.url) {
+        result.sourceUrl = repository.url;
+      }
+      return result;
+    } catch (err) {
+      if (err.statusCode !== 404) {
+        throw new ExternalHostError(err);
+      }
+      this.handleGenericErrors(err);
     }
-    const assetName = lookupName.replace(`${library}/`, '');
-    const releases = assets
-      .filter(({ files }) => files.includes(assetName))
-      .map(({ version, sri }) => ({ version, newDigest: sri[assetName] }));
-
-    const result: ReleaseResult = { releases };
-
-    if (homepage) {
-      result.homepage = homepage;
-    }
-    if (repository?.url) {
-      result.sourceUrl = repository.url;
-    }
-    return result;
-  } catch (err) {
-    if (err.statusCode !== 404) {
-      throw new ExternalHostError(err);
-    }
-    throw err;
   }
 }

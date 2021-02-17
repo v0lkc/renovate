@@ -34,7 +34,7 @@ describe(getName(__filename), () => {
     expect(datasource.getDatasources()).toBeDefined();
     expect(datasource.getDatasourceList()).toBeDefined();
   });
-  it('validates dataource', () => {
+  it('validates datasource', () => {
     function validateDatasource(module: DatasourceApi, name: string): boolean {
       if (!module.getReleases) {
         return false;
@@ -44,9 +44,20 @@ describe(getName(__filename), () => {
       }
       return true;
     }
+    function filterClassBasedDatasources(name: string): boolean {
+      return !['cdnjs', 'clojure'].includes(name);
+    }
     const dss = datasource.getDatasources();
 
-    const loadedDs = loadModules(__dirname, validateDatasource);
+    // class based datasources
+    dss.delete('cdnjs');
+    dss.delete('clojure');
+
+    const loadedDs = loadModules(
+      __dirname,
+      validateDatasource,
+      filterClassBasedDatasources
+    );
     expect(Array.from(dss.keys())).toEqual(Object.keys(loadedDs));
 
     for (const dsName of dss.keys()) {
@@ -80,6 +91,14 @@ describe(getName(__filename), () => {
       await datasource.getPkgReleases({
         datasource: 'gitbucket',
         depName: 'some/dep',
+      })
+    ).toBeNull();
+  });
+  it('returns class datasource', async () => {
+    expect(
+      await datasource.getPkgReleases({
+        datasource: 'cdnjs',
+        depName: null,
       })
     ).toBeNull();
   });

@@ -1,4 +1,4 @@
-import * as datasourceClojure from '../../datasource/clojure';
+import { ClojureDatasource } from '../../datasource/clojure';
 import type { PackageDependency, PackageFile } from '../types';
 
 export function trimAtKey(str: string, kwName: string): string | null {
@@ -49,7 +49,7 @@ export function extractFromVectors(
     if (artifactId && version && fileReplacePosition) {
       result.push({
         ...ctx,
-        datasource: datasourceClojure.id,
+        datasource: new ClojureDatasource().id,
         depName: expandDepName(cleanStrLiteral(artifactId)),
         currentValue: cleanStrLiteral(version),
       });

@@ -1,7 +1,7 @@
 /* eslint-disable no-template-curly-in-string */
 import { readFileSync } from 'fs';
 import { resolve } from 'upath';
-import * as datasourceClojure from '../../datasource/clojure';
+import { ClojureDatasource } from '../../datasource/clojure';
 import { extractFromVectors, extractPackageFile, trimAtKey } from './extract';
 
 const leinProjectClj = readFileSync(
@@ -23,7 +23,7 @@ describe('manager/clojure/extract', () => {
     expect(extractFromVectors('[[]]')).toEqual([]);
     expect(extractFromVectors('[[foo/bar "1.2.3"]]')).toEqual([
       {
-        datasource: datasourceClojure.id,
+        datasource: new ClojureDatasource().id,
         depName: 'foo:bar',
         currentValue: '1.2.3',
       },
@@ -32,12 +32,12 @@ describe('manager/clojure/extract', () => {
       extractFromVectors('[\t[foo/bar "1.2.3"]\n["foo/baz"  "4.5.6"] ]')
     ).toEqual([
       {
-        datasource: datasourceClojure.id,
+        datasource: new ClojureDatasource().id,
         depName: 'foo:bar',
         currentValue: '1.2.3',
       },
       {
-        datasource: datasourceClojure.id,
+        datasource: new ClojureDatasource().id,
         depName: 'foo:baz',
         currentValue: '4.5.6',
       },
