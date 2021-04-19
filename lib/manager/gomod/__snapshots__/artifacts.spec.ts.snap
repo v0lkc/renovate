@@ -73,6 +73,35 @@ Array [
 ]
 `;
 
+exports[`.updateArtifacts() returns updated go.sum for lockfile maintenance 1`] = `
+Array [
+  Object {
+    "cmd": "go get -u -d ./...",
+    "options": Object {
+      "cwd": "/tmp/github/some/repo",
+      "encoding": "utf-8",
+      "env": Object {
+        "CGO_ENABLED": "1",
+        "GONOPROXY": "noproxy.example.com/*",
+        "GONOSUMDB": "1",
+        "GOPATH": "/tmp/renovate/cache/others/go",
+        "GOPRIVATE": "private.example.com/*",
+        "GOPROXY": "proxy.example.com",
+        "HOME": "/home/user",
+        "HTTPS_PROXY": "https://example.com",
+        "HTTP_PROXY": "http://example.com",
+        "LANG": "en_US.UTF-8",
+        "LC_ALL": "en_US",
+        "NO_PROXY": "localhost",
+        "PATH": "/tmp/path",
+      },
+      "maxBuffer": 10485760,
+      "timeout": 900000,
+    },
+  },
+]
+`;
+
 exports[`.updateArtifacts() skips updating import paths for gopkg.in dependencies 1`] = `
 Array [
   Object {

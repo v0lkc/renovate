@@ -4,6 +4,7 @@ import { extractPackageFile } from './extract';
 import { updateDependency } from './update';
 
 export const language = LANGUAGE_GOLANG;
+export const supportsLockFileMaintenance = true;
 export { extractPackageFile, updateDependency, updateArtifacts };
 
 export const defaultConfig = {

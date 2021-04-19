@@ -107,6 +107,24 @@ describe('.updateArtifacts()', () => {
     ).not.toBeNull();
     expect(execSnapshots).toMatchSnapshot();
   });
+  it('returns updated go.sum for lockfile maintenance', async () => {
+    fs.readFile.mockResolvedValueOnce('Current go.sum' as any);
+    fs.readFile.mockResolvedValueOnce(null as any); // vendor modules filename
+    const execSnapshots = mockExecAll(exec);
+    git.getRepoStatus.mockResolvedValueOnce({
+      modified: ['go.sum'],
+    } as StatusResult);
+    fs.readFile.mockResolvedValueOnce('New go.sum' as any);
+    expect(
+      await gomod.updateArtifacts({
+        packageFileName: 'go.mod',
+        updatedDeps: [],
+        newPackageFileContent: gomod1,
+        config: { ...config, updateType: 'lockFileMaintenance' },
+      })
+    ).not.toBeNull();
+    expect(execSnapshots).toMatchSnapshot();
+  });
   it('supports vendor directory update', async () => {
     const foo = join('vendor/github.com/foo/foo/go.mod');
     const bar = join('vendor/github.com/bar/bar/go.mod');

@@ -30,6 +30,30 @@ function getPreCommands(): string[] | null {
   return preCommands;
 }
 
+/**
+ * Extracts a list of direct dependencies and their versions from the given go.mod file
+ *
+ * @param goModContent the content of the go.mod file
+ */
+function getDirectDependencies(goModContent: string): string[] {
+  let requiredDeps = goModContent.match(/require\s*\(\s*\n([^\)]+)\)/g);
+
+  if (requiredDeps.length == 0) {
+    return [];
+  }
+
+  let directDepsMatches = requiredDeps[0].matchAll(
+    /^\s*(?<depName>[^\s]+)\s*(?<depVersion>[^\s]+)\s*$/g
+  );
+  let directDeps = [];
+
+  for (const match of directDepsMatches) {
+    directDeps.push(`${match.groups.depName}@${match.groups.depVersion}`);
+  }
+
+  return directDeps;
+}
+
 function getUpdateImportPathCmds(
   updatedDeps: string[],
   { constraints, newMajor }: UpdateArtifactsConfig
@@ -100,6 +124,8 @@ export async function updateArtifacts({
     }
     await writeLocalFile(goModFileName, massagedGoMod);
 
+    const isLockFileMaintenance = config.updateType === 'lockFileMaintenance';
+
     const cmd = 'go';
     const execOptions: ExecOptions = {
       cwdFile: goModFileName,
@@ -122,9 +148,19 @@ export async function updateArtifacts({
 
     const execCommands = [];
 
-    let args = 'get -d ./...';
-    logger.debug({ cmd, args }, 'go get command included');
-    execCommands.push(`${cmd} ${args}`);
+    let args = ``;
+
+    if (isLockFileMaintenance) {
+      let directDependencies = getDirectDependencies(massagedGoMod);
+
+      args = `get -u -d ${directDependencies.join(' ')}`;
+      logger.debug('go lockfileMaintenance in progress');
+      execCommands.push(`${cmd} ${args}`);
+    } else {
+      args = 'get -d ./...';
+      logger.debug({ cmd, args }, 'go get command included');
+      execCommands.push(`${cmd} ${args}`);
+    }
 
     // Update import paths on major updates above v1
     const isImportPathUpdateRequired =
